@@ -1,0 +1,95 @@
+"use client";
+import { useFormik } from "formik";
+import * as Yup from "yup";
+import { FaEnvelope, FaLock } from "react-icons/fa";
+import { getUsers, setAuth } from "@/lib/storage";
+import { toast, ToastContainer } from "react-toastify";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+// Validation Schema
+const LoginSchema = Yup.object().shape({
+  email: Yup.string().email("Enter a valid email").required("Email is required"),
+  password: Yup.string().required("Password is required"),
+});
+
+const Login = () => {
+  const router = useRouter();
+   
+  const [errorMsg,setErrorMSg]=useState('');
+
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validationSchema: LoginSchema,
+    onSubmit: ({ email, password }) => {
+      const users = getUsers();
+      const foundUser = users.find((user) => user.email === email && user.password === password);
+
+      if (foundUser) {
+        toast.success("Login successful");
+        localStorage.setItem("currentUser", JSON.stringify(foundUser));
+        setAuth(true);
+          router.push("/blog"); 
+      } else {
+        setErrorMSg("Invalid email or password");
+      }
+    },
+  });
+
+  return (
+    <div className="p-6 max-w-md mx-auto bg-white border border-gray-200 shadow-md rounded-lg">
+      <ToastContainer />
+      <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">Login to Your Account</h2>
+
+      <form className="space-y-4" onSubmit={formik.handleSubmit}>
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+          <div className="relative">
+            <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              id="email"
+              type="email"
+              className="w-full p-3 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              {...formik.getFieldProps("email")}
+            />
+          </div>
+          {formik.touched.email && formik.errors.email && (
+            <p className="text-red-500 text-sm mt-1">{formik.errors.email}</p>
+          )}
+        </div>
+
+        {/* Password */}
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+          <div className="relative">
+            <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              id="password"
+              type="password"
+              className="w-full p-3 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+              {...formik.getFieldProps("password")}
+            />
+          </div>
+          {formik.touched.password && formik.errors.password && (
+            <p className="text-red-500 text-sm mt-1">{formik.errors.password}</p>
+          )}
+        </div>
+                <p className="text-sm text-red-500">{errorMsg}</p>
+        <button type="submit" className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+          Login
+        </button>
+      </form>
+
+      <p className="mt-4 text-center text-sm text-gray-600">
+        Don't have an account? <Link href="/signup" className="text-blue-600 hover:underline">Signup here</Link>.
+      </p>
+    </div>
+  );
+};
+
+export default Login;
