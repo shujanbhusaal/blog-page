@@ -1,81 +1,79 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { getBlogs, saveBlog, deleteBlog, updateBlog, isAuthenticated, setAuth, initDummyBlogs } from '@/lib/storage'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { deleteBlog, isAuthenticated, setAuth, blogDummy } from '@/lib/storage';
+import Card from '../components/Card';
 
 export default function BlogsPage() {
-  const [blogs, setBlogs] = useState([])
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [image, setImage] = useState('')
-  const [editingId, setEditingId] = useState(null)
-  const router = useRouter()
+  const router = useRouter();
+  const [blogList, setBlogList] = useState([]);
+  
+  
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login')
-    } else {
-      initDummyBlogs()
-      setBlogs(getBlogs())
+    const auth = isAuthenticated();
+    if (!auth) {
+      router.push('/login');
     }
-  }, [])
+  }, []);
 
-  const handleAddOrUpdateBlog = () => {
-    if (editingId) {
-      const updated = { id: editingId, title, description, image }
-      updateBlog(updated)
-      setEditingId(null)
-    } else {
-      const newBlog = { id: crypto.randomUUID(), title, description, image }
-      saveBlog(newBlog)
-    }
-    setTitle('')
-    setDescription('')
-    setImage('')
-    setBlogs(getBlogs())
-  }
+  // Retrieve blogs from localStorage (or fallback to dummy data)
+   const getBlogs = () => {
+    const storedBlogs = localStorage.getItem('blogs');
+    const parsedBlogs = JSON.parse(storedBlogs);
+    console.log(parsedBlogs)
+    setBlogList(parsedBlogs.length===0 ? blogDummy : parsedBlogs);
+    //console.log(parsedBlogs)
+  };
 
-  const handleEdit = (blog) => {
-    setEditingId(blog.id)
-    setTitle(blog.title)
-    setDescription(blog.description)
-    setImage(blog.image)
-  }
-
-  const handleDelete = (id) => {
-    deleteBlog(id)
-    setBlogs(getBlogs())
-  }
+  useEffect(() => {
+    getBlogs();
+  }, []);
 
   const handleLogout = () => {
-    setAuth(false)
-    router.push('/login')
-  }
+    setAuth(false);
+    router.push('/login');
+  };
+
+  const handleAdd = () => {
+    router.push('/addblog');
+  };
+
+  
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Blogs</h2>
-        <button className="btn" onClick={handleLogout}>Logout</button>
+    <div className="container mx-auto px-6 py-8">
+      {/* Header with Blog Title and Action Buttons */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4 md:mb-0">My Blog</h1>
+        <div className="flex space-x-4">
+          <button 
+            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+            onClick={handleAdd}
+          >
+            Add Blog
+          </button>
+          <button 
+            className="bg-gray-600 text-white px-6 py-3 rounded hover:bg-gray-700 transition"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
       </div>
-      <input className="input" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <input className="input" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
-      <input className="input" placeholder="Image Path" value={image} onChange={(e) => setImage(e.target.value)} />
-      <button className="btn my-2" onClick={handleAddOrUpdateBlog}>{editingId ? 'Update' : 'Add'} Blog</button>
-
-      <div className="space-y-4">
-        {blogs.map((blog) => (
-          <div key={blog.id} className="p-4 border rounded-lg">
-            <img src={blog.image} alt="" className="w-full h-40 object-cover mb-2" />
-            <h3 className="font-bold text-lg">{blog.title}</h3>
-            <p>{blog.description}</p>
-            <div className="flex gap-2 mt-2">
-              <button className="btn" onClick={() => handleEdit(blog)}>Edit</button>
-              <button className="btn" onClick={() => handleDelete(blog.id)}>Delete</button>
-            </div>
-          </div>
+      {/* List of Blog Cards */}
+      <div className="space-y-8">
+        {blogList.map((data, index) => (
+          <Card
+            index={index}
+            title={data.title}
+            description={data.description}
+            image={data.image}
+            getBlogs={getBlogs}
+          
+          />
         ))}
       </div>
     </div>
-  )
+  );
 }
