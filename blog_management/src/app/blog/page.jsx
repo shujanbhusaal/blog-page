@@ -1,79 +1,59 @@
-'use client'
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { deleteBlog, isAuthenticated, setAuth, blogDummy } from '@/lib/storage';
-import Card from '../components/Card';
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { isAuthenticated, setAuth, blogDummy } from "@/lib/storage";
+import Card from "../components/Card";
+import Navbar from "../components/Navbar";
 
 export default function BlogsPage() {
   const router = useRouter();
   const [blogList, setBlogList] = useState([]);
-  
-  
+  const [isDummy,setIsDummy] = useState(true)
 
   useEffect(() => {
-    const auth = isAuthenticated();
-    if (!auth) {
-      router.push('/login');
+    if (!isAuthenticated()) {
+      router.push("/login");
     }
-  }, []);
+  }, [router]);
 
-  // Retrieve blogs from localStorage (or fallback to dummy data)
-   const getBlogs = () => {
-    const storedBlogs = localStorage.getItem('blogs');
-    const parsedBlogs = JSON.parse(storedBlogs);
-    console.log(parsedBlogs)
-    setBlogList(parsedBlogs.length===0 ? blogDummy : parsedBlogs);
-    //console.log(parsedBlogs)
+  const fetchBlogs = () => {
+    const storedBlogs = localStorage.getItem("blogs");
+    let parsedBlogs = [];
+    try {
+      parsedBlogs = JSON.parse(storedBlogs);
+    } catch (error) {
+      console.error("Error parsing blogs:", error);
+    }
+    setBlogList(parsedBlogs && parsedBlogs.length > 0 ? parsedBlogs : blogDummy);
+    setIsDummy(parsedBlogs && parsedBlogs.length > 0 ? false : true)
   };
 
   useEffect(() => {
-    getBlogs();
+    fetchBlogs();
   }, []);
 
-  const handleLogout = () => {
-    setAuth(false);
-    router.push('/login');
-  };
-
-  const handleAdd = () => {
-    router.push('/addblog');
-  };
-
-  
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      {/* Header with Blog Title and Action Buttons */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4 md:mb-0">My Blog</h1>
-        <div className="flex space-x-4">
-          <button 
-            className="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
-            onClick={handleAdd}
-          >
-            Add Blog
-          </button>
-          <button 
-            className="bg-gray-600 text-white px-6 py-3 rounded hover:bg-gray-700 transition"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
+    <>
+    <Navbar/>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-8 grid-cols-1 md:grid-cols-2">
+          {blogList.map((blog,index) => (
+            <Card
+              key={index}
+              id={blog.id}
+              title={blog.title}
+              description={blog.description}
+              image={blog.image || blog.sampleImage}
+              fetchBlogs={fetchBlogs}
+              dummy={isDummy}
+            />
+          ))}
         </div>
-      </div>
-      {/* List of Blog Cards */}
-      <div className="space-y-8">
-        {blogList.map((data, index) => (
-          <Card
-            index={index}
-            title={data.title}
-            description={data.description}
-            image={data.image}
-            getBlogs={getBlogs}
-          
-          />
-        ))}
-      </div>
+      </main>
     </div>
+    </>
+  
   );
 }
